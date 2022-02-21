@@ -17,7 +17,6 @@ arranges 30 random letters and inserts them in a list
 RETURNS: 
 
 --}
-
 randomLetters :: IO [Char]
 randomLetters = fmap  (take 30 . randomRs ('a','z')) newStdGen
 
@@ -30,17 +29,23 @@ RETURNS:
 --}
 letterchecker :: Eq a => [a] -> [a] -> Bool
 letterchecker [] [] = True
-letterchecker [] (y:ys) = True
-letterchecker (x:xs) [] = False
-letterchecker (x:xs) (y:ys)
-  | x == y = letterchecker xs ys
-  | otherwise = letterchecker (x:xs) (ys ++ [y])
+letterchecker (y:ys) [] = True
+letterchecker [] (x:xs) = False
+letterchecker (y:ys) (x:xs) = letterchecker (lettercheckerAux x (y:ys)) xs
+
+lettercheckerAux :: Eq a => a -> [a] -> [a]
+lettercheckerAux _ [] = []
+lettercheckerAux x (y:ys) = 
+  if x `elem` (y:ys) then
+    if x == y then ys
+    else y : lettercheckerAux x ys
+  else []
+
 
 
 {--pointscounter counts the points of the player
 
 --}
-
 pointscounter :: [Char] -> Int -> Int
 pointscounter [] acc = acc
 pointscounter (x:xs) acc = (conv (Ta.lookup tableOfPoints x)) + (pointscounter xs acc)
@@ -63,30 +68,36 @@ continuePlay :: [Char] -> Int -> IO ()
 continuePlay list acc = do
   english <- fmap lines $ readFile "english3.txt"
   word <- collectWord list
-  if word `elem` english then do 
-    let newlist = delete word list
-    let score = pointscounter word acc
-    putStrLn "Here is your total score: "
-    print score
-    putStrLn "Here is your new list of letters: "
-    print newlist
-    if null newlist then
-        putStrLn "You won, you used all letters from your list!"
-    else do
-      putStrLn "Do you want to continue? (yes/no): "
-      continue <- readAnswer
-      if continue == "yes" then continuePlay newlist (pointscounter word acc)
-      else
-        putStrLn "Thank you for playing!"
+  if word == "" then do
+    putStrLn ""
   else do
-    putStrLn "Invalid input. Type a valid english word"
-    continuePlay list acc
+    if word `elem` english then do 
+      let newlist = delete word list
+      let score = pointscounter word acc
+      putStrLn "Here is your total score: "
+      print score
+      putStrLn "Here is your new list of letters: "
+      print newlist
+      if null newlist then
+        putStrLn "You won, you used all letters from your list!"
+      else do
+        putStrLn "Do you want to continue? (yes/no): "
+        continue <- readAnswer
+        if continue == "yes" then continuePlay newlist (pointscounter word acc)
+        else do
+          putStrLn "Thank you for playing!"
+          putStrLn "Here is your final score: "
+          print score
+    else do
+      putStrLn "Invalid input. Type a valid english word"
+      continuePlay list acc
     
 
 
 main :: IO ()
 main = do
     putStrLn "INSTRUCTIONS"
+    putStrLn "1. Words must be longer than one letter."
     putStrLn "Enter your name: "
     gamerName <- getLine
     putStrLn $ "Hey " ++ gamerName ++ " let's play!!"
@@ -98,7 +109,7 @@ main = do
     continue <- readAnswer
     if continue == "yes" then continuePlay rm 0
     else
-      putStrLn "Okay maybe next time!"
+      putStrLn "Okay, maybe next time!"
 
 
 -- borrowed from Lab 15
@@ -115,11 +126,15 @@ collectWord :: [Char] -> IO [Char]
 collectWord list = do
     putStrLn "Enter a word: "
     word <- getLine
-    if letterchecker word list then
-      return word
+    if length word == 1 then do
+      putStrLn "You lose for trying to cheat."
+      return ""
     else do
-      putStrLn "Invalid input. Use letters from your list."
-      collectWord list
+      if letterchecker list word then
+        return word
+      else do
+        putStrLn "Invalid input. Use letters from your list."
+        collectWord list
 
 
     
