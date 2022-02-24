@@ -5,6 +5,7 @@ import qualified Table as Ta
 import System.IO
 import System.Random
 
+
 type Answer = [Char]
 
 
@@ -26,6 +27,7 @@ main = do
     putStrLn "1. Words must be longer than one letter."
     putStrLn "2. Each word must be a valid english word and therefore be included in the english dictionary file (english3.txt)."
     putStrLn "3. You must only use letters from your given list."
+    putStrLn "4. Each new word must begin with the last letter of the previous word."
     putStrLn " "
     putStrLn "Enter your name: "
     gamerName <- getLine
@@ -40,7 +42,7 @@ main = do
     if continue == "yes" then do 
         putStrLn "Good luck!"
         putStrLn " "
-        continuePlay rm 0
+        continuePlay rm 0 '.'
     else
       putStrLn "Okay, maybe next time!"
 
@@ -50,9 +52,13 @@ arranges 30 random letters and inserts them in a list
 RETURNS: 
 
 --}
+--vowels = ['a', 'e', 'i', 'o', 'u']
+--('b','z') = ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','z']
 randomLetters :: IO [Char]
 randomLetters = fmap  (take 30 . randomRs ('a','z')) newStdGen
 
+randomNum :: IO [Int]
+randomNum = fmap  (take 10 . randomRs (0,4)) newStdGen
 
 -- borrowed from Lab 15
 readAnswer :: IO Answer
@@ -62,51 +68,87 @@ readAnswer =
   evaluate (read line))
   ((\_ -> do
      putStrLn "Invalid input. Correct format: yes/no "
+     putStrLn " "
      readAnswer) :: SomeException -> IO Answer)
 
   
-continuePlay :: [Char] -> Int -> IO ()
-continuePlay list acc = do
+continuePlay :: [Char] -> Int -> Char -> IO ()
+continuePlay list acc char = do
   english <- fmap lines $ readFile "english3.txt"
-  word <- collectWord list
+  word <- collectWord list char
   if word == "" then do
     putStrLn ""
   else do
     if word `elem` english then do 
-      let newlist = delete word list
+      let nextfirst = last word
+      let newlist = delete (init word) list
       let score = pointscounter word acc
+      putStrLn " "
       putStrLn "Here is your total score: "
       print score
+      putStrLn " "
       putStrLn "Here is your new list of letters: "
       print newlist
-      if null newlist then
+      putStrLn " "
+      putStrLn "Here is the letter your next word has to begin with: "
+      print nextfirst
+      putStrLn " "
+      if (length newlist) == 1 then do
         putStrLn "You won, you used all letters from your list!"
       else do
         putStrLn "Do you want to continue? (yes/no): "
         continue <- readAnswer
-        if continue == "yes" then continuePlay newlist (pointscounter word acc)
+        if continue == "yes" then continuePlay newlist (pointscounter word acc) nextfirst
         else do
+          putStrLn " "
           putStrLn "Thank you for playing!"
+          putStrLn " "
           putStrLn "Here is your final score: "
+          putStrLn " "
           print score
     else do
       putStrLn "Invalid input. Type a valid english word"
-      continuePlay list acc
+      putStrLn " "
+      continuePlay list acc char
 
+{-
 
-collectWord :: [Char] -> IO [Char]
-collectWord list = do
+-}
+
+collectWord :: [Char] -> Char -> IO [Char]
+collectWord list char = do
     putStrLn "Enter a word: "
     word <- getLine
-    if length word == 1 then do
-      putStrLn "You lose for trying to cheat."
-      return ""
+    if (length word) == 0 then do
+      putStrLn "You must enter a word as input."
+      putStrLn " "
+      collectWord list char
     else do
-      if letterchecker list word then
-        return word
+      if length word == 1 then do
+        putStrLn "You lose for trying to cheat."
+        return ""
       else do
-        putStrLn "Invalid input. Use letters from your list."
-        collectWord list
+        if char == '.' then do
+          if letterchecker list word then
+            return word
+          else do
+            putStrLn "Invalid input. Use letters from your list."
+            putStrLn " "
+            collectWord list char
+        else 
+          if (head word) == char then do
+            if letterchecker list (tail word) then
+              return word
+            else do
+              putStrLn "Invalid input. Use letters from your list."
+              putStrLn " "
+              collectWord list char
+          else do
+            putStrLn "You must use the last character from your previous word as the first letter of your current word."
+            putStrLn "That letter is: "
+            print char
+            putStrLn " "
+            collectWord list char
 
 
 {-- letterchecker checks if the letters in the input matches the given ones
