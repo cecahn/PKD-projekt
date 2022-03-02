@@ -1,13 +1,9 @@
--- ..
 import Control.Exception ( SomeException, catch, evaluate )
 import Prelude hiding(catch)
 import Data.Binary (Binary(putList))
 import qualified Table as Ta
 import System.IO
 import System.Random
-
-
-type Answer = [Char]
 
 
 listOfPoints = [('a',1), ('b',2), ('c',2), ('d',1), ('e',1), ('f',4), ('g',2), ('h',3), ('i',1), ('j',4), ('k',3), ('l',1), ('m',3), ('n',1), ('o',2), ('p',3), ('q',10), ('r',1), ('s',1), ('t',1), ('u',3), ('v',4), ('w',2), ('x',10), ('y',8), ('z',10)]
@@ -110,15 +106,15 @@ Invalid input. Correct format: yes/no
 
 -}
 
-readAnswer :: IO Answer
+readAnswer :: IO [Char]
 readAnswer =
   catch (do
   line <- getLine
   evaluate (read line))
   ((\_ -> do
-     putStrLn "Invalid input. Correct format: yes/no "
+     putStrLn "Invalid input. Correct format: \"yes\"/\"no\" "
      putStrLn " "
-     readAnswer) :: SomeException -> IO Answer)
+     readAnswer) :: SomeException -> IO [Char])
 
 {- continuePlay list acc char wordlist
 reads the file english3 and checks the approved words against it. If the word is valid the function
@@ -183,12 +179,12 @@ continuePlay list acc char wordlist = do
     if word `elem` english then do
       let nextfirst = last word
       let newlist = delete (init word) list
-      let score = pointscounter word acc
+      let score = pointsCounter word acc
       putStrLn " "
       putStrLn "Here are all your words for this round: "
       print (word : wordlist)
       putStrLn " "
-      putStrLn "Here is your total score: "
+      putStrLn "Here is your current score: "
       print score
       putStrLn " "
       putStrLn "Here is your new list of letters: "
@@ -199,13 +195,23 @@ continuePlay list acc char wordlist = do
       putStrLn " "
       if length newlist == 1 then do
         putStrLn "You won, you used all letters from your list!"
+        putStrLn " "
+        putStrLn "Here are all the words you created: "
+        print (word : wordlist)
+        putStrLn " "
+        putStrLn "Here is your final score: "
+        putStrLn " "
+        print score
       else do
         putStrLn "Do you want to continue? (\"yes\"/\"no\") : "
         continue <- readAnswer
-        if continue == "yes" then continuePlay newlist (pointscounter word acc) nextfirst (word : wordlist)
+        if continue == "yes" then continuePlay newlist (pointsCounter word acc) nextfirst (word : wordlist)
         else do
           putStrLn " "
           putStrLn "Thank you for playing!"
+          putStrLn " "
+          putStrLn "Here are all the words you created: "
+          print (word : wordlist)
           putStrLn " "
           putStrLn "Here is your final score: "
           putStrLn " "
@@ -346,10 +352,18 @@ delete lst (y:ys)
   | otherwise = y : delete lst ys
 
 
-{--pointscounter counts the points of the player
-
+{--pointsCounter (x:xs) acc
+counts the points for each element from a list and adds it to the accumulator. 
+PRE: True
+RETURNS: acc, after each value corresponding to every x from (x:xs) in tableOfPoints is added to acc
+EXAMPLES:
+   pointsCounter "hello" 0 = 8
+   pointsCounter "bye" 8 = 19
+   pointsCounter "" 0 = 0
+   
 --}
-pointscounter :: [Char] -> Int -> Int
-pointscounter [] acc = acc
-pointscounter (x:xs) acc = conv (Ta.lookup tableOfPoints x) + pointscounter xs acc
+pointsCounter :: [Char] -> Int -> Int
+--VARIANT: lenght (x:xs)
+pointsCounter [] acc = acc
+pointsCounter (x:xs) acc = conv (Ta.lookup tableOfPoints x) + pointsCounter xs acc
   where conv (Just x) = x
