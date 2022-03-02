@@ -2,6 +2,7 @@ import Control.Exception ( SomeException, catch, evaluate )
 import Prelude hiding(catch)
 import Data.Binary (Binary(putList))
 import qualified Table as Ta
+import Test.HUnit
 import System.IO
 import System.Random
 
@@ -10,8 +11,9 @@ listOfPoints = [('a',1), ('b',2), ('c',2), ('d',1), ('e',1), ('f',4), ('g',2), (
 tableOfPoints = Ta.fromList listOfPoints
 
 {-- main
-provides the game instruction for player and prints out the list of the letters which are avalible to use
+starts the game by providing information and calling for other functions to continue the game
 PRE: True
+SIDEEFFECTS: prints information in the terminal
 RETURNS: Fixed strings containing the instructions for the game and various different strings
 depending on the players input.
 EXAMPLE:  
@@ -80,6 +82,7 @@ main = do
 {-- randomletters
 Arranges 30 random letters and inserts them in a list
 PRE: TRUE
+SIDEEFFECTS: True
 RETURNS: a string with 30 letters
 EXAMPLES: 
   randomLetters == "rwpnxhbyqzhjdasqsrgwentzktldyy"
@@ -92,6 +95,7 @@ randomLetters = fmap  (take 30 . randomRs ('a','z')) newStdGen
 {- readAnswer 
 evaluates a players input to see if it is the desired one
 PRE: TRUE  
+SIDEEFFECTS: Prints strings depending on the player's input
 RETURNS: If the answer is not our desired one it prints a string asking the player to try again.
 Otherwise it returns the answer 
 EXAMPLE: readAnswer
@@ -120,7 +124,8 @@ readAnswer =
 reads the file english3 and checks the approved words against it. If the word is valid the function
 stores the word, the last char, the players score and deletes the letters in the word from the players
 list. 
-PRE:
+PRE: True
+SIDEEFFECTS: Prints strings depending on the word the player wrote
 RETURNS: The list of the words that's been used throughout the run, the players total score, new 
 list of letters and the letter the next word has to begin with. Then it either restarts or thanks 
 the player for playing depending on the players input. 
@@ -225,7 +230,7 @@ continuePlay list acc char wordlist = do
 Takes an input from the user and checks if the word contains more than one letter and only contains letters
   which the game has provided
 SIDE EFFECTS: reads in users input and prints out the game interface
-RETURN:  
+RETURN: Different strings depending on what word the player wrote  
 EXAMPLES: 
   *Main> collectWord "abcdan" '.'
   Enter a word: 
@@ -297,6 +302,7 @@ collectWord list char = do
 {-- letterchecker (y:ys) (x:xs)
 checks if the letters in (x:xs) are included in (y:ys)
 PRE: True
+SIDEEFFECTS: True
 RETURNS: True if the letters (x:xs) are included in (y:ys), Retruns False otherwise
 EXAMPLES: 
   letterchecker "abcdefn" "can" == True
@@ -316,6 +322,7 @@ letterchecker (y:ys) (x:xs) = letterchecker (lettercheckerAux x (y:ys)) xs
 {-- lettercheckerAux x (y:ys)
 deletes the first x which is presented in (y:ys)
 PRE: True
+SIDEEFFECTS: True
 RETURNS: the rest of (y:ys) if x is an element in (y:ys), returns and empty string otherwise
 EXAMPLES: 
   lettercheckerAux ' ' "hello" == ""
@@ -336,6 +343,7 @@ lettercheckerAux x (y:ys) =
 {-- delete lst (y:ys)
 deletes the elemnt in (y:ys) which are included in lst 
 PRE: True
+SIDEEFFECTS: True
 RETURNS: the rest of (y:ys) after the common elements between (y:ys) and lst have been removed
 EXAMPLES:
    delete "he" "hello" == "llo"
@@ -367,3 +375,21 @@ pointsCounter :: [Char] -> Int -> Int
 pointsCounter [] acc = acc
 pointsCounter (x:xs) acc = conv (Ta.lookup tableOfPoints x) + pointsCounter xs acc
   where conv (Just x) = x
+
+---------------------------------------------------------------------------
+--                            TESTCASES                                  --
+---------------------------------------------------------------------------
+
+tests = TestList [TestLabel "test1" test1, TestLabel "test2" test2, TestLabel "test3" test3, TestLabel "test4" test4, TestLabel "test5" test5, TestLabel "test6" test6, TestLabel "test7" test7, TestLabel "test8" test8, TestLabel "test9" test9]
+test1 = TestCase $ assertEqual "letterchecker 'jeh' 'hej' " True  (letterchecker "jeh" "hej")
+test2 = TestCase $ assertEqual "letterchecker 'kkkkkhmmmmjlllebb' 'hej'" True (letterchecker "kkkkkhmmmmjlllebb" "hej") 
+test3 = TestCase $ assertEqual "letterchecker 'hej' 'da'" False (letterchecker "hej" "då")
+test4 = TestCase $ assertEqual "pointscounter 'a' 0" 1 (pointsCounter "a" 0)
+test5 = TestCase $ assertEqual "pointscounter [] 0" 0 (pointsCounter "" 0)
+test6 = TestCase $ assertEqual "delete 'hej' 'kkjmmeddh" "kkjmmedd" (delete "hej" "kkjmmeddh")
+test7 = TestCase $ assertEqual "delete 'm' 'llkkdd'" "llkkdd" (delete "m" "llkkdd")
+test8 = TestCase $ assertEqual "letterchecker 'kkkjmmmme' 'hej'" False (letterchecker "kkkjmmme" "hej")
+test9 = TestCase $ assertEqual "letterchecker 'mmmkkkk' ' ' " False (letterchecker "mmmkkk" "")
+
+
+runtests = runTestTT $ TestList [test1, test2, test3, test4, test5, test6, test7, test8, test9]
