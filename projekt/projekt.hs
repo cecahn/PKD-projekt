@@ -14,8 +14,7 @@ tableOfPoints = Ta.fromList listOfPoints
 starts the game by providing information and calling for other functions to continue the game
 PRE: True
 SIDEEFFECTS: prints information in the terminal
-RETURNS: Fixed strings containing the instructions for the game and various different strings
-depending on the players input.
+RETURNS: Depending on the player's input, main either calls for continuePlay or terminate the game
 EXAMPLE:  
 Welcome to Alphapet the computer game
  
@@ -96,8 +95,7 @@ randomLetters = fmap  (take 30 . randomRs ('a','z')) newStdGen
 evaluates a players input to see if it is the desired one
 PRE: TRUE  
 SIDEEFFECTS: Prints strings depending on the player's input
-RETURNS: If the answer is not our desired one it prints a string asking the player to try again.
-Otherwise it returns the answer 
+RETURNS: Returns the answer if it is of the correct format
 EXAMPLE: readAnswer
 "yes"
 "yes" 
@@ -121,14 +119,12 @@ readAnswer =
      readAnswer) :: SomeException -> IO [Char])
 
 {- continuePlay list acc char wordlist
-reads the file english3 and checks the approved words against it. If the word is valid the function
-stores the word, the last char, the players score and deletes the letters in the word from the players
+reads the file english3.txt and checks the approved words against it. If the word is valid the function
+stores the word, the last char, the player's score and deletes the letters in the word from the player's
 list. 
 PRE: True
 SIDEEFFECTS: Prints strings depending on the word the player wrote
-RETURNS: The list of the words that's been used throughout the run, the players total score, new 
-list of letters and the letter the next word has to begin with. Then it either restarts or thanks 
-the player for playing depending on the players input. 
+RETURNS: either continues the game by calling it self or terminates the game depending on the input from the user
 EXAMPLE:Here are all your words for this round: 
 ["far"]
  
@@ -183,7 +179,7 @@ continuePlay list acc char wordlist = do
   else do
     if word `elem` english then do
       let nextfirst = last word
-      let newlist = delete (init word) list
+      let newlist = delete list (init word)
       let score = pointsCounter word acc
       putStrLn " "
       putStrLn "Here are all your words for this round: "
@@ -230,7 +226,7 @@ continuePlay list acc char wordlist = do
 Takes an input from the user and checks if the word contains more than one letter and only contains letters
   which the game has provided
 SIDE EFFECTS: reads in users input and prints out the game interface
-RETURN: Different strings depending on what word the player wrote  
+RETURN: the input word if it satisfies the conditions  
 EXAMPLES: 
   *Main> collectWord "abcdan" '.'
   Enter a word: 
@@ -303,7 +299,7 @@ collectWord list char = do
 checks if the letters in (x:xs) are included in (y:ys)
 PRE: True
 SIDEEFFECTS: True
-RETURNS: True if the letters (x:xs) are included in (y:ys), Retruns False otherwise
+RETURNS: True if all elements of (x:xs) are elements of (y:ys), otherwise False
 EXAMPLES: 
   letterchecker "abcdefn" "can" == True
   letterchecker "abcdefn" "hey" == False
@@ -323,7 +319,7 @@ letterchecker (y:ys) (x:xs) = letterchecker (lettercheckerAux x (y:ys)) xs
 deletes the first x which is presented in (y:ys)
 PRE: True
 SIDEEFFECTS: True
-RETURNS: the rest of (y:ys) if x is an element in (y:ys), returns and empty string otherwise
+RETURNS: if x is an element in (y:ys), all of (y:ys) except for the element that matches x, otherwise an empty list
 EXAMPLES: 
   lettercheckerAux ' ' "hello" == ""
   lettercheckerAux  'h' "hello" == "ello"
@@ -340,24 +336,40 @@ lettercheckerAux x (y:ys) =
   else []
 
 
-{-- delete lst (y:ys)
-deletes the elemnt in (y:ys) which are included in lst 
+{-- delete (y:ys) (x:xs) 
+deletes the elements in (y:ys) which are included in (x:xs)
 PRE: True
 SIDEEFFECTS: True
 RETURNS: the rest of (y:ys) after the common elements between (y:ys) and lst have been removed
 EXAMPLES:
-   delete "he" "hello" == "llo"
-   delete "hello" "he" == ""
-   delete "" "word" == "word"
+   delete "hello" "he" == "llo"
+   delete "he" "hello" == ""
+   delete "word" "" == "word"
 
 --}
 delete :: Eq a => [a] -> [a] -> [a]
---VARIANT: lenght lst or length (y:ys)
-delete _ [] = []
-delete [] (y:ys) = y:ys
-delete lst (y:ys)
-  | head lst == y = delete (tail lst) ys
-  | otherwise = y : delete lst ys
+--VARIANT: length (y:ys) lenght (x:xs)
+delete [] _ = []
+delete (y:ys) [] = y:ys
+delete (y:ys) (x:xs) = delete (deleteAux x (y:ys)) xs
+
+
+{-- deleteAux x (y:ys)
+deletes the element in (y:ys) that is equal to x
+PRE: True
+SIDEEFFECTS: True
+RETURNS: the rest of (y:ys) after the common element x has been removed
+EXAMPLES:
+   deleteAux 'h' "hello" == "ello"
+   deleteAux 'o' "he" == "he"
+
+--}
+deleteAux :: Eq a => a -> [a] -> [a]
+--VARIANT: length (y:ys)
+deleteAux _ [] = []
+deleteAux x (y:ys) =
+  if x == y then ys
+  else y : deleteAux x ys
 
 
 {--pointsCounter (x:xs) acc
@@ -386,10 +398,11 @@ test2 = TestCase $ assertEqual "letterchecker 'kkkkkhmmmmjlllebb' 'hej'" True (l
 test3 = TestCase $ assertEqual "letterchecker 'hej' 'da'" False (letterchecker "hej" "då")
 test4 = TestCase $ assertEqual "pointscounter 'a' 0" 1 (pointsCounter "a" 0)
 test5 = TestCase $ assertEqual "pointscounter [] 0" 0 (pointsCounter "" 0)
-test6 = TestCase $ assertEqual "delete 'hej' 'kkjmmeddh" "kkjmmedd" (delete "hej" "kkjmmeddh")
-test7 = TestCase $ assertEqual "delete 'm' 'llkkdd'" "llkkdd" (delete "m" "llkkdd")
+test6 = TestCase $ assertEqual "delete 'kkjmmeddh' 'hej'" "kkmmdd" (delete "kkjmmeddh" "hej" )
+test7 = TestCase $ assertEqual "delete 'llkkdd' 'm'" "llkkdd" (delete "llkkdd" "m")
 test8 = TestCase $ assertEqual "letterchecker 'kkkjmmmme' 'hej'" False (letterchecker "kkkjmmme" "hej")
-test9 = TestCase $ assertEqual "letterchecker 'mmmkkkk' ' ' " False (letterchecker "mmmkkk" "")
+test9 = TestCase $ assertEqual "letterchecker ' ' 'mmmkkkk'" False (letterchecker "" "mmmkkk")
+
 
 
 runtests = runTestTT $ TestList [test1, test2, test3, test4, test5, test6, test7, test8, test9]
