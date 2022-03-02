@@ -15,8 +15,33 @@ tableOfPoints = Ta.fromList listOfPoints
 {-- main
 provides the game instruction for player and prints out the list of the letters which are avalible to use
 PRE: True
-RETURNS: 
-
+RETURNS: Fixed strings containing the instructions for the game and various different strings
+depending on the players input.
+EXAMPLE:  
+Welcome to Alphapet the computer game
+ 
+INSTRUCTIONS
+You will be given a list of 30 randomly chosen letters and you need to build as many words as possible using these letters.
+Each letter is worth a specific number of points so the longer words and the more difficult letters you use will generate a higher score.
+Whenever you don't want to play anymore or cannot build any more words, you can choose to quit the game and you will get all of your words and your final score presented.
+If you manage to use all of your letters you win the game.
+ 
+RULES
+1. Inputs must be longer than one letter.
+2. Each input must be a valid english word and therefore be included in the english dictionary file (english3.txt).
+3. You must only use letters from your given list.
+4. Each new input must begin with the last letter of the previous word.
+ 
+Enter your name: 
+Cissi
+Hey Cissi let's play!!
+ 
+Here are your letters: 
+"trzhnsbjrocmqkuriuicakuszqmoqu"
+ 
+Do you want to continue? "yes"/"no": 
+"yes"
+Good luck!
 
 --}
 
@@ -67,6 +92,22 @@ EXAMPLES:
 randomLetters :: IO [Char]
 randomLetters = fmap  (take 30 . randomRs ('a','z')) newStdGen
 
+{- readAnswer 
+evaluates a players input to see if it is the desired one
+PRE: TRUE  
+RETURNS: If the answer is not our desired one it prints a string asking the player to try again.
+Otherwise it returns the answer 
+EXAMPLE: readAnswer
+"yes"
+"yes" 
+readAnswer
+"no"
+"no"
+readAnswer
+hej
+Invalid input. Correct format: yes/no
+
+-}
 
 readAnswer :: IO Answer
 readAnswer =
@@ -78,7 +119,58 @@ readAnswer =
      putStrLn " "
      readAnswer) :: SomeException -> IO Answer)
 
-
+{- continuePlay list acc char wordlist
+reads the file english3 and checks the approved words against it. If the word is valid the function
+stores the word, the last char, the players score and deletes the letters in the word from the players
+list. 
+PRE:
+RETURNS: The list of the words that's been used throughout the run, the players total score, new 
+list of letters and the letter the next word has to begin with. Then it either restarts or thanks 
+the player for playing depending on the players input. 
+EXAMPLE:Here are all your words for this round: 
+["far"]
+ 
+Here is your total score: 
+6
+ 
+Here is your new list of letters: 
+"lqfhzkvecsoryctmsqseljnadbnn"
+ 
+Here is the letter your next word has to begin with: 
+'r'
+ 
+Do you want to continue? ("yes"/"no") : 
+"yes"
+ 
+Enter a word:  
+aey
+Invalid input. Type a valid english word
+ 
+ 
+Enter a word: 
+am
+ 
+Here are all your words for this round: 
+["am","ta","fit"]
+ 
+Here is your total score: 
+12
+ 
+Here is your new list of letters: 
+"ismtivupyuzujaoeeypjwmlgse"
+ 
+Here is the letter your next word has to begin with: 
+'m'
+ 
+Do you want to continue? ("yes"/"no") : 
+"no"
+ 
+Thank you for playing!
+ 
+Here is your final score: 
+ 
+2
+-}
 
 continuePlay :: [Char] -> Int -> Char -> [[Char]] -> IO ()
 continuePlay list acc char wordlist = do
