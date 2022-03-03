@@ -136,7 +136,7 @@ reads the file english3.txt and checks the approved words against it. If the wor
 stores the word, the last char, the player's score and deletes the letters in the word from the player's
 list. 
 PRE: True
-SIDEEFFECTS: Prints strings depending on the word the player wrote
+SIDEEFFECTS: Prints strings depending on the word the player wrote and reads the file english3.txt
 RETURNS: either continues the game by calling it self or terminates the game depending on the input from the user
 EXAMPLE:Here are all your words for this round: 
 ["far"]
