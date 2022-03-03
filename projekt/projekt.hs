@@ -6,8 +6,19 @@ import Test.HUnit
 import System.IO
 import System.Random
 
+{-- listOfPoints
+A list of tuples where each tuple consists of a letter and the corresponding value of points
 
+--}
 listOfPoints = [('a',1), ('b',2), ('c',2), ('d',1), ('e',1), ('f',4), ('g',2), ('h',3), ('i',1), ('j',4), ('k',3), ('l',1), ('m',3), ('n',1), ('o',2), ('p',3), ('q',10), ('r',1), ('s',1), ('t',1), ('u',3), ('v',4), ('w',2), ('x',10), ('y',8), ('z',10)]
+
+{-- tableOfPoints
+Converts listOfPoints into a table
+PRE: True
+SIDEEFFECTS: True
+RETURNS: a table with all letters as keys and the corresponding values of points from listOfPoints
+EXAMPLE: 
+--}
 tableOfPoints = Ta.fromList listOfPoints
 
 {-- main
