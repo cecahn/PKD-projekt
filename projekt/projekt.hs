@@ -1,22 +1,57 @@
 import Control.Exception ( SomeException, catch, evaluate )
 import Prelude hiding(catch)
-import Data.Binary (Binary(putList))
 import qualified Table as Ta
+import Test.HUnit
 import System.IO
 import System.Random
 
+{-- listOfPoints
+A list of tuples where each tuple consists of a letter and the corresponding value of points
 
-type Answer = [Char]
-
-
+--}
 listOfPoints = [('a',1), ('b',2), ('c',2), ('d',1), ('e',1), ('f',4), ('g',2), ('h',3), ('i',1), ('j',4), ('k',3), ('l',1), ('m',3), ('n',1), ('o',2), ('p',3), ('q',10), ('r',1), ('s',1), ('t',1), ('u',3), ('v',4), ('w',2), ('x',10), ('y',8), ('z',10)]
+
+{-- tableOfPoints
+Converts listOfPoints into a table
+PRE: True
+SIDEEFFECTS: True
+RETURNS: a table with all letters as keys and the corresponding values of points from listOfPoints
+EXAMPLE: tableOfPoints == fromList [('a',1),('b',2),('c',2),('d',1),('e',1),('f',4),('g',2),('h',3),('i',1),('j',4),('k',3),('l',1),('m',3),('n',1),('o',2),('p',3),('q',10),('r',1),('s',1),('t',1),('u',3),('v',4),('w',2),('x',10),('y',8),('z',10)]
+--}
+
+tableOfPoints :: Ta.Table Char Int
 tableOfPoints = Ta.fromList listOfPoints
 
 {-- main
-provides the game instruction for player and prints out the list of the letters which are avalible to use
+starts the game by providing information and calling for other functions to continue the game
 PRE: True
-RETURNS: 
-
+SIDEEFFECTS: prints information in the terminal
+RETURNS: Depending on the player's input, main either calls for continuePlay or terminate the game
+EXAMPLE:  
+Welcome to Alphapet the computer game
+ 
+INSTRUCTIONS
+You will be given a list of 30 randomly chosen letters and you need to build as many words as possible using these letters.
+Each letter is worth a specific number of points so the longer words and the more difficult letters you use will generate a higher score.
+Whenever you don't want to play anymore or cannot build any more words, you can choose to quit the game and you will get all of your words and your final score presented.
+If you manage to use all of your letters you win the game.
+ 
+RULES
+1. Inputs must be longer than one letter.
+2. Each input must be a valid english word and therefore be included in the english dictionary file (english3.txt).
+3. You must only use letters from your given list.
+4. Each new input must begin with the last letter of the previous word.
+ 
+Enter your name: 
+Cissi
+Hey Cissi let's play!!
+ 
+Here are your letters: 
+"trzhnsbjrocmqkuriuicakuszqmoqu"
+ 
+Do you want to continue? "yes"/"no": 
+"yes"
+Good luck!
 
 --}
 
@@ -58,6 +93,7 @@ main = do
 {-- randomletters
 Arranges 30 random letters and inserts them in a list
 PRE: TRUE
+SIDEEFFECTS: True
 RETURNS: a string with 30 letters
 EXAMPLES: 
   randomLetters == "rwpnxhbyqzhjdasqsrgwentzktldyy"
@@ -67,18 +103,84 @@ EXAMPLES:
 randomLetters :: IO [Char]
 randomLetters = fmap  (take 30 . randomRs ('a','z')) newStdGen
 
+{- readAnswer 
+evaluates a players input to see if it is the desired one
+PRE: TRUE  
+SIDEEFFECTS: Prints strings depending on the player's input
+RETURNS: Returns the answer if it is of the correct format
+EXAMPLE: readAnswer
+"yes"
+"yes" 
+readAnswer
+"no"
+"no"
+readAnswer
+hej
+Invalid input. Correct format: yes/no
 
-readAnswer :: IO Answer
+-}
+
+readAnswer :: IO [Char]
 readAnswer =
   catch (do
   line <- getLine
   evaluate (read line))
   ((\_ -> do
-     putStrLn "Invalid input. Correct format: yes/no "
+     putStrLn "Invalid input. Correct format: \"yes\"/\"no\" "
      putStrLn " "
-     readAnswer) :: SomeException -> IO Answer)
+     readAnswer) :: SomeException -> IO [Char])
 
-
+{- continuePlay list acc char wordlist
+reads the file english3.txt and checks the approved words against it. If the word is valid the function
+stores the word, the last char, the player's score and deletes the letters in the word from the player's
+list. 
+PRE: True
+SIDEEFFECTS: Prints strings depending on the word the player wrote and reads the file english3.txt
+RETURNS: either continues the game by calling it self or terminates the game depending on the input from the user
+EXAMPLE:Here are all your words for this round: 
+["far"]
+ 
+Here is your total score: 
+6
+ 
+Here is your new list of letters: 
+"lqfhzkvecsoryctmsqseljnadbnn"
+ 
+Here is the letter your next word has to begin with: 
+'r'
+ 
+Do you want to continue? ("yes"/"no") : 
+"yes"
+ 
+Enter a word:  
+aey
+Invalid input. Type a valid english word
+ 
+ 
+Enter a word: 
+am
+ 
+Here are all your words for this round: 
+["am","ta","fit"]
+ 
+Here is your total score: 
+12
+ 
+Here is your new list of letters: 
+"ismtivupyuzujaoeeypjwmlgse"
+ 
+Here is the letter your next word has to begin with: 
+'m'
+ 
+Do you want to continue? ("yes"/"no") : 
+"no"
+ 
+Thank you for playing!
+ 
+Here is your final score: 
+ 
+2
+-}
 
 continuePlay :: [Char] -> Int -> Char -> [[Char]] -> IO ()
 continuePlay list acc char wordlist = do
@@ -89,13 +191,13 @@ continuePlay list acc char wordlist = do
   else do
     if word `elem` english then do
       let nextfirst = last word
-      let newlist = delete (init word) list
-      let score = pointscounter word acc
+      let newlist = delete list (init word)
+      let score = pointsCounter word acc
       putStrLn " "
       putStrLn "Here are all your words for this round: "
       print (word : wordlist)
       putStrLn " "
-      putStrLn "Here is your total score: "
+      putStrLn "Here is your current score: "
       print score
       putStrLn " "
       putStrLn "Here is your new list of letters: "
@@ -106,13 +208,23 @@ continuePlay list acc char wordlist = do
       putStrLn " "
       if length newlist == 1 then do
         putStrLn "You won, you used all letters from your list!"
+        putStrLn " "
+        putStrLn "Here are all the words you created: "
+        print (word : wordlist)
+        putStrLn " "
+        putStrLn "Here is your final score: "
+        putStrLn " "
+        print score
       else do
         putStrLn "Do you want to continue? (\"yes\"/\"no\") : "
         continue <- readAnswer
-        if continue == "yes" then continuePlay newlist (pointscounter word acc) nextfirst (word : wordlist)
+        if continue == "yes" then continuePlay newlist (pointsCounter word acc) nextfirst (word : wordlist)
         else do
           putStrLn " "
           putStrLn "Thank you for playing!"
+          putStrLn " "
+          putStrLn "Here are all the words you created: "
+          print (word : wordlist)
           putStrLn " "
           putStrLn "Here is your final score: "
           putStrLn " "
@@ -126,7 +238,7 @@ continuePlay list acc char wordlist = do
 Takes an input from the user and checks if the word contains more than one letter and only contains letters
   which the game has provided
 SIDE EFFECTS: reads in users input and prints out the game interface
-RETURN:  
+RETURN: the input word if it satisfies the conditions  
 EXAMPLES: 
   *Main> collectWord "abcdan" '.'
   Enter a word: 
@@ -198,7 +310,8 @@ collectWord list char = do
 {-- letterchecker (y:ys) (x:xs)
 checks if the letters in (x:xs) are included in (y:ys)
 PRE: True
-RETURNS: True if the letters (x:xs) are included in (y:ys), Retruns False otherwise
+SIDEEFFECTS: True
+RETURNS: True if all elements of (x:xs) are elements of (y:ys), otherwise False
 EXAMPLES: 
   letterchecker "abcdefn" "can" == True
   letterchecker "abcdefn" "hey" == False
@@ -217,7 +330,8 @@ letterchecker (y:ys) (x:xs) = letterchecker (lettercheckerAux x (y:ys)) xs
 {-- lettercheckerAux x (y:ys)
 deletes the first x which is presented in (y:ys)
 PRE: True
-RETURNS: the rest of (y:ys) if x is an element in (y:ys), returns and empty string otherwise
+SIDEEFFECTS: True
+RETURNS: if x is an element in (y:ys), all of (y:ys) except for the element that matches x, otherwise an empty list
 EXAMPLES: 
   lettercheckerAux ' ' "hello" == ""
   lettercheckerAux  'h' "hello" == "ello"
@@ -234,29 +348,73 @@ lettercheckerAux x (y:ys) =
   else []
 
 
-{-- delete lst (y:ys)
-deletes the elemnt in (y:ys) which are included in lst 
+{-- delete (y:ys) (x:xs) 
+deletes the elements in (y:ys) which are included in (x:xs)
 PRE: True
+SIDEEFFECTS: True
 RETURNS: the rest of (y:ys) after the common elements between (y:ys) and lst have been removed
 EXAMPLES:
-   delete "he" "hello" == "llo"
-   delete "hello" "he" == ""
-   delete "" "word" == "word"
+   delete "hello" "he" == "llo"
+   delete "he" "hello" == ""
+   delete "word" "" == "word"
 
 --}
 delete :: Eq a => [a] -> [a] -> [a]
---VARIANT: lenght lst or length (y:ys)
-delete _ [] = []
-delete [] (y:ys) = y:ys
-delete lst (y:ys)
-  | head lst == y = delete (tail lst) ys
-  | otherwise = y : delete lst ys
+--VARIANT: length (y:ys) lenght (x:xs)
+delete [] _ = []
+delete (y:ys) [] = y:ys
+delete (y:ys) (x:xs) = delete (deleteAux x (y:ys)) xs
 
 
-{--pointscounter counts the points of the player
+{-- deleteAux x (y:ys)
+deletes the element in (y:ys) that is equal to x
+PRE: True
+SIDEEFFECTS: True
+RETURNS: the rest of (y:ys) after the common element x has been removed
+EXAMPLES:
+   deleteAux 'h' "hello" == "ello"
+   deleteAux 'o' "he" == "he"
 
 --}
-pointscounter :: [Char] -> Int -> Int
-pointscounter [] acc = acc
-pointscounter (x:xs) acc = conv (Ta.lookup tableOfPoints x) + pointscounter xs acc
+deleteAux :: Eq a => a -> [a] -> [a]
+--VARIANT: length (y:ys)
+deleteAux _ [] = []
+deleteAux x (y:ys) =
+  if x == y then ys
+  else y : deleteAux x ys
+
+
+{--pointsCounter (x:xs) acc
+counts the points for each element from a list and adds it to the accumulator. 
+PRE: True
+RETURNS: acc, after each value corresponding to every x from (x:xs) in tableOfPoints is added to acc
+EXAMPLES:
+   pointsCounter "hello" 0 = 8
+   pointsCounter "bye" 8 = 19
+   pointsCounter "" 0 = 0
+   
+--}
+pointsCounter :: [Char] -> Int -> Int
+--VARIANT: lenght (x:xs)
+pointsCounter [] acc = acc
+pointsCounter (x:xs) acc = conv (Ta.lookup tableOfPoints x) + pointsCounter xs acc
   where conv (Just x) = x
+
+---------------------------------------------------------------------------
+--                            TESTCASES                                  --
+---------------------------------------------------------------------------
+
+tests = TestList [TestLabel "test1" test1, TestLabel "test2" test2, TestLabel "test3" test3, TestLabel "test4" test4, TestLabel "test5" test5, TestLabel "test6" test6, TestLabel "test7" test7, TestLabel "test8" test8, TestLabel "test9" test9]
+test1 = TestCase $ assertEqual "letterchecker 'jeh' 'hej' " True  (letterchecker "jeh" "hej")
+test2 = TestCase $ assertEqual "letterchecker 'kkkkkhmmmmjlllebb' 'hej'" True (letterchecker "kkkkkhmmmmjlllebb" "hej") 
+test3 = TestCase $ assertEqual "letterchecker 'hej' 'da'" False (letterchecker "hej" "då")
+test4 = TestCase $ assertEqual "pointscounter 'a' 0" 1 (pointsCounter "a" 0)
+test5 = TestCase $ assertEqual "pointscounter [] 0" 0 (pointsCounter "" 0)
+test6 = TestCase $ assertEqual "delete 'kkjmmeddh' 'hej'" "kkmmdd" (delete "kkjmmeddh" "hej" )
+test7 = TestCase $ assertEqual "delete 'llkkdd' 'm'" "llkkdd" (delete "llkkdd" "m")
+test8 = TestCase $ assertEqual "letterchecker 'kkkjmmmme' 'hej'" False (letterchecker "kkkjmmme" "hej")
+test9 = TestCase $ assertEqual "letterchecker ' ' 'mmmkkkk'" False (letterchecker "" "mmmkkk")
+
+
+
+runtests = runTestTT $ TestList [test1, test2, test3, test4, test5, test6, test7, test8, test9]
